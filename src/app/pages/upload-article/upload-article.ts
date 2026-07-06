@@ -3,6 +3,7 @@ import { Dashboard } from '../../shared/dashboard/dashboard';
 import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realtime-articles.service';
 
 @Component({
   selector: 'app-upload-article',
@@ -170,14 +171,16 @@ import { CommonModule } from '@angular/common';
   `,
 })
 export class UploadArticle {
-  private fb = inject(FormBuilder);
+  private formBuilder = inject(FormBuilder);
+  private readonly supabase = inject(RealTimeArticlesService);
+
 
   // Layout View Signal management flags
   readonly previewMode = signal<boolean>(false);
   readonly tags = signal<string[]>([]);
 
   // Form Group Core Definition Architecture
-  readonly postForm: FormGroup = this.fb.group({
+  readonly postForm: FormGroup = this.formBuilder.group({
     title: ['', [Validators.required, Validators.minLength(5)]],
     content: ['', [Validators.required, Validators.minLength(20)]],
     description: ['', [Validators.required, Validators.maxLength(200)]],
