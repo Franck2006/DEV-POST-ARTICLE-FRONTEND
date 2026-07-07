@@ -13,15 +13,8 @@ export class RealTimeArticlesService {
 
 
     constructor() {
-        // these are triggering the realtime 
-
-        console.log(" ")
-        console.log(" ")
         this.fetchArticles();
-        this.setUpArticleRealTime()
-        console.log(" this is where the real time is on init ")
-        console.log(" ")
-        console.log(" ")
+        // this.setUpArticleRealTime();
     }
 
     private async fetchArticles() {
