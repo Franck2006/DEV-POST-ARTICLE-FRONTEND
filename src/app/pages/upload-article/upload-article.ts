@@ -174,6 +174,10 @@ export class UploadArticle {
   private formBuilder = inject(FormBuilder);
   private readonly supabase = inject(RealTimeArticlesService);
 
+  constructor() {
+    console.log(this.supabase)
+  }
+
 
   // Layout View Signal management flags
   readonly previewMode = signal<boolean>(false);
