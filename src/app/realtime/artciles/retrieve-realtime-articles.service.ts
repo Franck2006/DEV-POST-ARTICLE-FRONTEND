@@ -27,8 +27,8 @@ export class RealTimeArticlesService {
     private async fetchArticles() {
         const { data: articleData, error: articleError } = await this.supabase
             .from('Article')
-            .select('*')
-        // .order('id', { ascending: true });
+            .select('*,author:User!authorId(*),Comment(*)')
+            .order('id', { ascending: true });
 
         if (articleError)
             console.log('Error fetching articles:', articleError);
