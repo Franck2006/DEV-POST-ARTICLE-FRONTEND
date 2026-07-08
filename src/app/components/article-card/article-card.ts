@@ -1,6 +1,7 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, WritableSignal } from '@angular/core';
 import { DevAppImgProfile } from '../../ui/dev-app-img-profile/dev-app-img-profile';
 import { DatePipe, I18nPluralPipe } from '@angular/common';
+import { ModelInter } from '../../model/model.interface';
 
 export interface ArticleItem {
   id: string;

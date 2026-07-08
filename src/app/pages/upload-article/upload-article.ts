@@ -1,13 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
 import { Dashboard } from '../../shared/dashboard/dashboard';
-import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realtime-articles.service';
+import { DevAppBtn } from "../../ui/dev-app-btn/dev-app-btn";
+import { ArticlesService } from '../../services/article-service/article-service.service';
 
 @Component({
   selector: 'app-upload-article',
-  imports: [Dashboard, ReactiveFormsModule, DevAppBtn, CommonModule],
+  imports: [Dashboard, ReactiveFormsModule, CommonModule, DevAppBtn],
   template: `
     <app-dashboard>
       <form
@@ -151,6 +152,7 @@ import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realti
               size="md"
               [disabled]="postForm.invalid"
               class="w-full"
+              [isLoading]="isPostFormSubmitted()"
             >
               <span>Publish Article</span>
             </app-dev-app-btn>
@@ -173,11 +175,14 @@ import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realti
 export class UploadArticle {
   private formBuilder = inject(FormBuilder);
   private readonly supabase = inject(RealTimeArticlesService);
+  private readonly articlesService = inject(ArticlesService);
 
   constructor() {
     console.log(this.supabase)
   }
 
+  isPostFormSubmitted = signal<boolean>(false)
+  isPostDraftSubmitted = signal<boolean>(false)
 
   // Layout View Signal management flags
   readonly previewMode = signal<boolean>(false);
@@ -188,6 +193,7 @@ export class UploadArticle {
     title: ['', [Validators.required, Validators.minLength(5)]],
     content: ['', [Validators.required, Validators.minLength(20)]],
     description: ['', [Validators.required, Validators.maxLength(200)]],
+    currentUserId: ['', Validators.required]
   });
 
   addTag(event: Event, inputEl: HTMLInputElement): void {
@@ -214,14 +220,22 @@ export class UploadArticle {
     // Wire this directly into your local Supabase post service slice
   }
 
+
   onSubmit(): void {
-    if (this.postForm.valid) return;
+    if (this.postForm.invalid) return;
+    this.isPostFormSubmitted.set(true)
 
     const publicationPayload = {
       ...this.postForm.value,
       tags: this.tags(),
       status: 'PUBLISHED',
     };
+
+    // this.articlesService.postArticle(publicationPayload)
+    //   .subscribe({
+    //     next: (response) => { console.log("Article posted successfully:", response) },
+    //     error: (error) => { console.log("Error posting article", error) },
+    //   });
 
     console.log('Payload ready to post to NestJS/Prisma pipeline:', publicationPayload);
     // Inject backend API service execution parameters here

@@ -10,8 +10,6 @@ export class RealTimeArticlesService {
     public readonly articles = signal<any[]>([]);
     private readonly supabase = inject(SupabaseService).supabase;
 
-
-
     constructor() {
         this.fetchArticles();
         // this.setUpArticleRealTime();

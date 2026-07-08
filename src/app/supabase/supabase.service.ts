@@ -18,8 +18,5 @@ export class SupabaseService {
             this.supabase_url,
             this.supabase_key
         )
-
-
-        // console.log("supabase client created", this.supabase)
     }
 }
