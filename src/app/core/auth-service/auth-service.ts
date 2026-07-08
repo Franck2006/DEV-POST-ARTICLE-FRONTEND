@@ -74,7 +74,7 @@ export class AuthService {
   }
 
   getUserData() {
-    return localStorage.getItem(USERKEY)
+    return JSON.parse(localStorage.getItem(USERKEY) || '{}') as ModelInter.User | null;
   }
 
   getAccessTokenData() {

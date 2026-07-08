@@ -34,20 +34,16 @@ export namespace ModelInter {
         avatarUrlPath: any
     }
 
+
     export interface Article extends ID, DateTime {
         title: string
-        slug: string
         content: string
-        coverImage: string
         status: string
-        publishedAt: string
-        createdAt: string
-        updatedAt: string
         authorId: string
-        author: Author
-        comments: any[]
-        likes: any[]
-        tags: any[]
+        author?: Author
+        comments?: string[]
+        likes?: string[]
+        tags?: string[]
     }
 
     export interface Author extends ID, DateTime {

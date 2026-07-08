@@ -1,10 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { Dashboard } from '../../shared/dashboard/dashboard';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realtime-articles.service';
 import { DevAppBtn } from "../../ui/dev-app-btn/dev-app-btn";
 import { ArticlesService } from '../../services/article-service/article-service.service';
+import { ModelInter } from '../../model/model.interface';
+import { AuthService } from '../../core/auth-service/auth-service';
 
 @Component({
   selector: 'app-upload-article',
@@ -172,13 +174,14 @@ import { ArticlesService } from '../../services/article-service/article-service.
     </app-dashboard>
   `,
 })
-export class UploadArticle {
+export class UploadArticle implements OnInit {
   private formBuilder = inject(FormBuilder);
   private readonly supabase = inject(RealTimeArticlesService);
   private readonly articlesService = inject(ArticlesService);
+  private readonly authService = inject(AuthService);
 
-  constructor() {
-    console.log(this.supabase)
+  ngOnInit(): void {
+    this.getInitialUserId()
   }
 
   isPostFormSubmitted = signal<boolean>(false)
@@ -193,8 +196,15 @@ export class UploadArticle {
     title: ['', [Validators.required, Validators.minLength(5)]],
     content: ['', [Validators.required, Validators.minLength(20)]],
     description: ['', [Validators.required, Validators.maxLength(200)]],
-    currentUserId: ['', Validators.required]
+    authorId: ['', Validators.required]
   });
+
+  // { value: '', disabled: true }
+
+  private getInitialUserId() {
+    const userId = this.authService.getUserData()?.id;
+    this.postForm.get('authorId')?.setValue(userId);
+  }
 
   addTag(event: Event, inputEl: HTMLInputElement): void {
     event.preventDefault(); // Prevents form submission on Enter keypress
@@ -225,19 +235,23 @@ export class UploadArticle {
     if (this.postForm.invalid) return;
     this.isPostFormSubmitted.set(true)
 
-    const publicationPayload = {
-      ...this.postForm.value,
-      tags: this.tags(),
-      status: 'PUBLISHED',
-    };
+    const { title, content, authorId, tags }: ModelInter.Article = this.postForm.value
 
-    // this.articlesService.postArticle(publicationPayload)
-    //   .subscribe({
-    //     next: (response) => { console.log("Article posted successfully:", response) },
-    //     error: (error) => { console.log("Error posting article", error) },
-    //   });
+    console.log('Initial authorId set in form:', this.postForm.value);
 
-    console.log('Payload ready to post to NestJS/Prisma pipeline:', publicationPayload);
-    // Inject backend API service execution parameters here
+    this.articlesService.postArticle({ title, content, status: 'PUBLISHED', authorId, tags: this.tags() })
+      .subscribe({
+        next: (res) => {
+          this.isPostFormSubmitted.set(false)
+          this.postForm.reset()
+          this.tags.set([]) // Clear tags after successful submission
+        },
+        error: (err) => {
+          console.error('Error posting article:', err)
+          this.isPostFormSubmitted.set(false)
+        }
+      })
+
+
   }
 }

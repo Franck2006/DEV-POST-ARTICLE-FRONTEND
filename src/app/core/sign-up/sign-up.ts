@@ -270,15 +270,11 @@ export class SignUp {
       next: (response) => {
         this.isLoading.set(false);
         this.signUpForm.reset()
-        this.router.navigate(['/profile']); // Navigate to profile page after successful sign-up
+        this.router.navigate(['/profile']);
 
-        console.log(" ")
-        console.log('SignUp successful:', response);
-        console.log(" ")
       },
       error: (error) => {
         this.isLoading.set(false);
-        console.error('SignUp error:', error);
       },
     });
 
