@@ -26,8 +26,6 @@ export class RealTimeArticlesService {
         else
             this.articles.set(articleData);
 
-        console.log('Fetched articles:', articleData);
-
     }
 
     private async setUpArticleRealTime() {

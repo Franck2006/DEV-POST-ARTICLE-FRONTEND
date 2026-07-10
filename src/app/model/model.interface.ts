@@ -1,6 +1,7 @@
 export namespace ModelInter {
     interface ID {
         id?: string
+
     }
 
     interface DateTime {

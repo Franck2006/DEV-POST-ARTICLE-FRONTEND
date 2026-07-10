@@ -199,8 +199,6 @@ export class UploadArticle implements OnInit {
     authorId: ['', Validators.required]
   });
 
-  // { value: '', disabled: true }
-
   private getInitialUserId() {
     const userId = this.authService.getUserData()?.id;
     this.postForm.get('authorId')?.setValue(userId);
@@ -226,8 +224,6 @@ export class UploadArticle implements OnInit {
       tags: this.tags(),
       status: 'DRAFT',
     };
-    console.log('Draft payload configured ready for your NestJS endpoint:', draftPayload);
-    // Wire this directly into your local Supabase post service slice
   }
 
 
@@ -235,9 +231,7 @@ export class UploadArticle implements OnInit {
     if (this.postForm.invalid) return;
     this.isPostFormSubmitted.set(true)
 
-    const { title, content, authorId, tags }: ModelInter.Article = this.postForm.value
-
-    console.log('Initial authorId set in form:', this.postForm.value);
+    const { title, content, authorId }: ModelInter.Article = this.postForm.value
 
     this.articlesService.postArticle({ title, content, status: 'PUBLISHED', authorId, tags: this.tags() })
       .subscribe({
@@ -247,7 +241,6 @@ export class UploadArticle implements OnInit {
           this.tags.set([]) // Clear tags after successful submission
         },
         error: (err) => {
-          console.error('Error posting article:', err)
           this.isPostFormSubmitted.set(false)
         }
       })

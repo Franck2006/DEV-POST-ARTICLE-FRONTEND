@@ -12,7 +12,7 @@ import { ModelInter } from '../../model/model.interface';
   template: `
     <app-dashboard>
       <div class="space-y-5">
-        <div *ngFor="let item of data" > 
+        <div *ngFor="let item of newdata()" > 
          <app-article-card [article]="item" /> 
         </div>
       </div>
@@ -24,6 +24,6 @@ export class HomePage {
   public newdata = this.articlesRealtime.articles as WritableSignal<ModelInter.Article[]>;
   data = MOCK_ARTICLES;
   constructor() {
-    console.log("this is the data from the home page", this.newdata)
+    console.log("this is the data from the home page", this.newdata())
   }
 }

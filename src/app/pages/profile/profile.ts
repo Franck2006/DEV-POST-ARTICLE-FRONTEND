@@ -4,6 +4,7 @@ import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
 import { DevAppImgProfile } from '../../ui/dev-app-img-profile/dev-app-img-profile';
 import { ArticleCard, ArticleItem } from '../../components/article-card/article-card';
 import { SAMPLE_PROFILE } from '../../core/data/data.data';
+import { ModelInter } from '../../model/model.interface';
 
 export interface UserProfileData {
   id: string;
@@ -237,8 +238,9 @@ export interface UserProfileData {
 export class Profile implements OnInit {
   // Safe modern Input signals accepting external context mapping models
   readonly profile = signal<UserProfileData | null>(null);
-  readonly userArticles = input<ArticleItem[]>([]);
+  readonly userArticles = input<ModelInter.Article[]>([]);
   readonly isCurrentUser = input<boolean>(false);
+
 
   ngOnInit(): void {
     this.profile.set(SAMPLE_PROFILE);

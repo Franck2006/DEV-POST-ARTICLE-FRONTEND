@@ -1,6 +1,6 @@
 import { Component, input, output, WritableSignal } from '@angular/core';
 import { DevAppImgProfile } from '../../ui/dev-app-img-profile/dev-app-img-profile';
-import { DatePipe, I18nPluralPipe } from '@angular/common';
+import { DatePipe, I18nPluralPipe, NgIf } from '@angular/common';
 import { ModelInter } from '../../model/model.interface';
 
 export interface ArticleItem {
@@ -20,7 +20,7 @@ export interface ArticleItem {
 
 @Component({
   selector: 'app-article-card',
-  imports: [DevAppImgProfile, DatePipe],
+  imports: [DevAppImgProfile, DatePipe, NgIf],
   template: `
     <article
       class="group relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/40 p-5 hover:bg-slate-900/80 hover:border-slate-700/60 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-600/[0.02]"
@@ -30,8 +30,10 @@ export interface ArticleItem {
           <div class="flex items-center gap-2">
             <app-dev-app-img-profile
               img_size="sm"
-              [user_name]="article().author.name"
-              [user_image]="article().author.avatarUrl"
+              [user_name]="article().author?.name"
+              [user_lastname]="article().author?.lastname"
+              [user_image]="article().author?.avatarUrl"
+              [user_full_email]= "article().author?.email"
             >
             </app-dev-app-img-profile>
 
@@ -39,7 +41,11 @@ export interface ArticleItem {
               <span
                 class="text-xs font-semibold text-slate-300 hover:text-blue-400 cursor-pointer transition-colors"
               >
-                {{ article().author.name }}
+                @if (article().author?.name && article().author?.lastname) {
+                  {{ article().author?.name }}    {{ article().author?.lastname }}
+                }@else {
+                    {{ article().author?.email }}  
+                }
               </span>
               <span class="text-[10px] text-slate-500">
                 {{ article().createdAt | date: 'mediumDate' }}
@@ -50,7 +56,7 @@ export interface ArticleItem {
           <span
             class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-800/60 text-slate-400"
           >
-            {{ article().readingTime || '5 min' }} read
+            {{  '5 min' }} read
           </span>
         </div>
 
@@ -61,7 +67,7 @@ export interface ArticleItem {
             {{ article().title }}
           </h3>
           <p class="text-sm text-slate-400 line-clamp-3 leading-relaxed">
-            {{ article().description }}
+            {{ article().content }}
           </p>
         </div>
       </div>
@@ -83,7 +89,7 @@ export interface ArticleItem {
           <button
             (click)="onLikeToggle($event)"
             [class]="
-              article().isLiked
+              true
                 ? 'flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/20 text-rose-500 bg-rose-500/5 transition-all active:scale-90'
                 : 'flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 text-slate-400 hover:text-rose-400 hover:bg-rose-500/5 hover:border-rose-500/20 transition-all active:scale-90'
             "
@@ -91,7 +97,7 @@ export interface ArticleItem {
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              [attr.fill]="article().isLiked ? 'currentColor' : 'none'"
+              [attr.fill]="false ? 'currentColor' : 'none'"
               viewBox="0 0 24 24"
               stroke-width="2"
               stroke="currentColor"
@@ -108,7 +114,7 @@ export interface ArticleItem {
           <button
             (click)="onArchiveToggle($event)"
             [class]="
-              article().isArchived
+              false
                 ? 'flex h-9 w-9 items-center justify-center rounded-xl border border-amber-500/20 text-amber-500 bg-amber-500/5 transition-all active:scale-90'
                 : 'flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 text-slate-400 hover:text-amber-400 hover:bg-amber-500/5 hover:border-amber-500/20 transition-all active:scale-90'
             "
@@ -116,7 +122,7 @@ export interface ArticleItem {
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              [attr.fill]="article().isArchived ? 'currentColor' : 'none'"
+              [attr.fill]=" false? 'currentColor' : 'none'"
               viewBox="0 0 24 24"
               stroke-width="2"
               stroke="currentColor"
@@ -136,7 +142,7 @@ export interface ArticleItem {
 })
 export class ArticleCard {
   // Reactive input for the complete article payload
-  readonly article = input.required<ArticleItem>();
+  readonly article = input.required<ModelInter.Article>();
 
   // Outputs to emit IDs back to a service handler for backend updates
   readonly likeChanged = output<string>();
@@ -144,11 +150,11 @@ export class ArticleCard {
 
   onLikeToggle(event: Event): void {
     event.stopPropagation(); // Prevents clicking the button from trigger-navigating to the article detail view
-    this.likeChanged.emit(this.article().id);
+    // this.likeChanged.emit(this.article().id);
   }
 
   onArchiveToggle(event: Event): void {
     event.stopPropagation();
-    this.archiveChanged.emit(this.article().id);
+    // this.archiveChanged.emit(this.article().id);
   }
 }
