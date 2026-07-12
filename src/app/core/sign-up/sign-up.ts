@@ -2,6 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
+import { ModelInter } from '../../model/model.interface';
+import { AuthService } from '../auth-service/auth-service';
 
 @Component({
   selector: 'app-sign-up',
@@ -104,16 +106,32 @@ import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
           <form [formGroup]="signUpForm" (ngSubmit)="onSubmit()" class="space-y-4">
             <div class="space-y-1.5">
               <label class="text-xs font-bold tracking-wider uppercase text-slate-400"
-                >Full Name</label
+                > Name</label
               >
               <input
                 type="text"
                 formControlName="name"
-                placeholder="e.g., Franck Amani"
+                placeholder="Name"
                 class="w-full bg-slate-900/40 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/10 transition-all"
               />
               @if (signUpForm.get('name')?.touched && signUpForm.get('name')?.invalid) {
                 <p class="text-xs text-red-400">Please declare your display name parameter.</p>
+              }
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold tracking-wider uppercase text-slate-400"
+                >Last Name</label
+              >
+              <input
+                type="text"
+                formControlName="lastname"
+                placeholder="Last Name"
+
+                class="w-full bg-slate-900/40 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/10 transition-all"
+              />
+              @if (signUpForm.get('lastname')?.touched && signUpForm.get('lastname')?.invalid) {
+                <p class="text-xs text-red-400">Please declare your last name parameter.</p>
               }
             </div>
 
@@ -225,6 +243,8 @@ import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
 export class SignUp {
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private readonly authService = inject(AuthService);
+
 
   // Structural operation flags
   readonly isLoading = signal<boolean>(false);
@@ -232,6 +252,7 @@ export class SignUp {
   // Form group definition schema mapping fields
   readonly signUpForm: FormGroup = this.fb.group({
     name: ['', [Validators.required]],
+    lastname: ['', [Validators.required]],
     username: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
@@ -242,18 +263,20 @@ export class SignUp {
     if (this.signUpForm.invalid) return;
 
     this.isLoading.set(true);
-    const dataPackage = this.signUpForm.value;
 
-    console.log(
-      'Packaging secure data array for your registration pipeline endpoint:',
-      dataPackage,
-    );
+    const { email, password, username, name, lastname }: ModelInter.SignUpUser = this.signUpForm.value;
 
-    // Mocking network latency round trip
-    setTimeout(() => {
-      this.isLoading.set(false);
-      // Route the freshly authenticated user straight into the dashboard workspace
-      this.router.navigate(['/feed']);
-    }, 1500);
+    this.authService.signUp({ email, password, username, name, lastname }).subscribe({
+      next: (response) => {
+        this.isLoading.set(false);
+        this.signUpForm.reset()
+        this.router.navigate(['/profile']);
+
+      },
+      error: (error) => {
+        this.isLoading.set(false);
+      },
+    });
+
   }
 }

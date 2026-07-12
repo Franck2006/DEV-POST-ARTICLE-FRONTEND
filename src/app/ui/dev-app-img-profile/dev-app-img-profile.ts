@@ -8,7 +8,26 @@ import { Component, computed, input } from '@angular/core';
   template: `
     <div class="flex flex-col md:flex-row items-center gap-x-3">
       <div [class]="classes()">
-        <img [src]="user_image()" [alt]="user_name()" class="w-full h-full object-cover" />
+        @if (user_image()) {
+          <img [src]="user_image()" [alt]="user_name()" class="w-full h-full object-cover" />
+        }@else {
+          <div class="h-full w-full flex items-center justify-center">
+            @if (user_name() && user_lastname()) {
+              <span class="uppercase">
+                {{user_name()?.charAt(0)}}
+              </span>
+              <span class="uppercase">
+                {{user_lastname()?.charAt(0)}}
+              </span>
+            }
+            @else {
+              <span class="uppercase">
+                {{user_full_email()?.charAt(0)}}
+              </span>
+            }
+          </div>
+        }
+    
       </div>
       <div>
         <ng-content />
@@ -20,6 +39,9 @@ export class DevAppImgProfile {
   readonly img_size = input<'sm' | 'md' | 'lg' | 'xl'>('sm');
   readonly user_name = input<string | undefined>('');
   readonly user_image = input<string | undefined>('');
+  readonly user_lastname = input<string | undefined>('');
+  readonly user_full_email = input<string | undefined>('');
+
 
   readonly classes = computed(() => {
     const size = this.img_size();

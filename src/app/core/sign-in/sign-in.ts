@@ -3,6 +3,8 @@ import { DevAppImgProfile } from '../../ui/dev-app-img-profile/dev-app-img-profi
 import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../auth-service/auth-service';
+import { ModelInter } from '../../model/model.interface';
 
 @Component({
   selector: 'app-sign-in',
@@ -205,6 +207,8 @@ import { Router, RouterLink } from '@angular/router';
 export class SignIn {
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private readonly authService = inject(AuthService);
+
 
   // Operation state indicators
   readonly isLoading = signal<boolean>(false);
@@ -219,16 +223,23 @@ export class SignIn {
   onSubmit(): void {
     if (this.signInForm.invalid) return;
 
+    const { email, password }: ModelInter.SignInUser = this.signInForm.value;
+
     this.isLoading.set(true);
-    const authPayload = this.signInForm.value;
 
-    console.log('Credentials packet packaged for secure Supabase validation:', authPayload);
+    this.authService.signIn({ email, password })
+      .subscribe({
+        next: (data) => {
+          this.isLoading.set(false);
+          this.router.navigate(['/upload-article']);
+          console.log(data)
+        },
+        error: (err) => {
+          this.isLoading.set(false);
+          console.log(err)
+        }
+      })
 
-    // Simulating authentication routing trip delay
-    setTimeout(() => {
-      this.isLoading.set(false);
-      // Navigate directly into your main landing route dashboard stream
-      this.router.navigate(['/feed']);
-    }, 1200);
+
   }
 }

@@ -1,13 +1,17 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { Dashboard } from '../../shared/dashboard/dashboard';
-import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realtime-articles.service';
+import { DevAppBtn } from "../../ui/dev-app-btn/dev-app-btn";
+import { ArticlesService } from '../../services/article-service/article-service.service';
+import { ModelInter } from '../../model/model.interface';
+import { AuthService } from '../../core/auth-service/auth-service';
+import { DevAppSelect } from '../../ui/dev-app-select/dev-app-select';
 
 @Component({
   selector: 'app-upload-article',
-  imports: [Dashboard, ReactiveFormsModule, DevAppBtn, CommonModule],
+  imports: [Dashboard, ReactiveFormsModule, CommonModule, DevAppBtn, DevAppSelect],
   template: `
     <app-dashboard>
       <form
@@ -85,7 +89,7 @@ import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realti
 
         <div class="space-y-6 lg:border-l lg:border-slate-800/80 lg:pl-6">
           <div class="space-y-2">
-            <label class="text-xs font-bold tracking-wider uppercase text-slate-400"
+            <label class="text-xs font-/home/franck-amani/Desktop/web-projects/INVENTORY-MANAGEMENT-SYSTEM-FOLDER/INVENTORY-MANAGEMENT-SYSTEM-FRONTEND/src/app/shared/ui/dev-app-inputbold tracking-wider uppercase text-slate-400"
               >Short Summary</label
             >
             <textarea
@@ -106,6 +110,8 @@ import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realti
               (keydown.enter)="addTag($event, tagInput)"
               class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 transition-all"
             />
+
+            
 
             <div class="flex flex-wrap gap-1.5 pt-2">
               @for (tag of tags(); track tag) {
@@ -142,6 +148,27 @@ import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realti
             </div>
           </div>
 
+
+          <div class="space-y-2">
+            <label class="text-xs font-bold tracking-wider uppercase text-slate-400"
+              >Article Status</label
+            >
+            <app-dev-app-select
+              formControlName="status"
+              label="Choose status"
+              placeholder="Select status"
+              [options]="statusOptions"
+              hintText="Choose whether this article should be saved as a draft or published now."
+            ></app-dev-app-select>
+
+            <p class="text-[11px] text-slate-500">
+              Selected status:
+              <span class="ml-1 font-semibold text-slate-200">
+                {{ postForm.get('status')?.value || 'Not selected' }}
+              </span>
+            </p>
+          </div>
+
           <div class="w-full h-px bg-slate-800/60 my-2"></div>
 
           <div class="flex flex-col gap-3 pt-2">
@@ -151,40 +178,51 @@ import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realti
               size="md"
               [disabled]="postForm.invalid"
               class="w-full"
+              [isLoading]="isPostFormSubmitted()"
             >
               <span>Publish Article</span>
             </app-dev-app-btn>
 
-            <app-dev-app-btn
-              type="button"
-              variant="secondary"
-              size="md"
-              (click)="saveDraft()"
-              class="w-full"
-            >
-              <span>Save Draft</span>
-            </app-dev-app-btn>
           </div>
         </div>
       </form>
     </app-dashboard>
   `,
 })
-export class UploadArticle {
+export class UploadArticle implements OnInit {
   private formBuilder = inject(FormBuilder);
   private readonly supabase = inject(RealTimeArticlesService);
+  private readonly articlesService = inject(ArticlesService);
+  private readonly authService = inject(AuthService);
 
+  ngOnInit(): void {
+    this.getInitialUserId()
+  }
+
+  isPostFormSubmitted = signal<boolean>(false)
+  isPostDraftSubmitted = signal<boolean>(false)
 
   // Layout View Signal management flags
   readonly previewMode = signal<boolean>(false);
   readonly tags = signal<string[]>([]);
+  readonly statusOptions = [
+    { label: 'Draft', value: 'DRAFT' },
+    { label: 'Published', value: 'PUBLISHED' },
+  ];
 
   // Form Group Core Definition Architecture
   readonly postForm: FormGroup = this.formBuilder.group({
     title: ['', [Validators.required, Validators.minLength(5)]],
     content: ['', [Validators.required, Validators.minLength(20)]],
     description: ['', [Validators.required, Validators.maxLength(200)]],
+    authorId: ['', Validators.required],
+    status: ['DRAFT', Validators.required]
   });
+
+  private getInitialUserId() {
+    const userId = this.authService.getUserData()?.id;
+    this.postForm.get('authorId')?.setValue(userId);
+  }
 
   addTag(event: Event, inputEl: HTMLInputElement): void {
     event.preventDefault(); // Prevents form submission on Enter keypress
@@ -200,26 +238,30 @@ export class UploadArticle {
     this.tags.update((currentTags) => currentTags.filter((t) => t !== tagToRemove));
   }
 
-  saveDraft(): void {
-    const draftPayload = {
-      ...this.postForm.value,
-      tags: this.tags(),
-      status: 'DRAFT',
-    };
-    console.log('Draft payload configured ready for your NestJS endpoint:', draftPayload);
-    // Wire this directly into your local Supabase post service slice
-  }
-
   onSubmit(): void {
-    if (this.postForm.valid) return;
+    if (this.postForm.invalid) return;
+    this.isPostFormSubmitted.set(true)
 
-    const publicationPayload = {
-      ...this.postForm.value,
-      tags: this.tags(),
-      status: 'PUBLISHED',
-    };
+    const { title, content, authorId, status }: ModelInter.Article = this.postForm.value
 
-    console.log('Payload ready to post to NestJS/Prisma pipeline:', publicationPayload);
-    // Inject backend API service execution parameters here
+    this.articlesService.postArticle({ title, content, status, authorId, tags: this.tags() })
+      .subscribe({
+        next: () => {
+          this.isPostFormSubmitted.set(false)
+          this.postForm.reset({
+            title: '',
+            content: '',
+            description: '',
+            authorId: this.authService.getUserData()?.id,
+            status
+          })
+          this.tags.set([]) // Clear tags after successful submission
+        },
+        error: () => {
+          this.isPostFormSubmitted.set(false)
+        }
+      })
+
+
   }
 }
