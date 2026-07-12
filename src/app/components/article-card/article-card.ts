@@ -1,6 +1,6 @@
 import { Component, input, output, WritableSignal } from '@angular/core';
 import { DevAppImgProfile } from '../../ui/dev-app-img-profile/dev-app-img-profile';
-import { DatePipe, I18nPluralPipe, NgIf } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ModelInter } from '../../model/model.interface';
 
 export interface ArticleItem {
@@ -20,7 +20,7 @@ export interface ArticleItem {
 
 @Component({
   selector: 'app-article-card',
-  imports: [DevAppImgProfile, DatePipe, NgIf],
+  imports: [DevAppImgProfile, DatePipe, CommonModule],
   template: `
     <article
       class="group relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/40 p-5 hover:bg-slate-900/80 hover:border-slate-700/60 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-600/[0.02]"
