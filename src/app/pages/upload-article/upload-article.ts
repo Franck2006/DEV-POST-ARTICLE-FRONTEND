@@ -7,10 +7,11 @@ import { DevAppBtn } from "../../ui/dev-app-btn/dev-app-btn";
 import { ArticlesService } from '../../services/article-service/article-service.service';
 import { ModelInter } from '../../model/model.interface';
 import { AuthService } from '../../core/auth-service/auth-service';
+import { DevAppSelect } from '../../ui/dev-app-select/dev-app-select';
 
 @Component({
   selector: 'app-upload-article',
-  imports: [Dashboard, ReactiveFormsModule, CommonModule, DevAppBtn],
+  imports: [Dashboard, ReactiveFormsModule, CommonModule, DevAppBtn, DevAppSelect],
   template: `
     <app-dashboard>
       <form
@@ -88,7 +89,7 @@ import { AuthService } from '../../core/auth-service/auth-service';
 
         <div class="space-y-6 lg:border-l lg:border-slate-800/80 lg:pl-6">
           <div class="space-y-2">
-            <label class="text-xs font-bold tracking-wider uppercase text-slate-400"
+            <label class="text-xs font-/home/franck-amani/Desktop/web-projects/INVENTORY-MANAGEMENT-SYSTEM-FOLDER/INVENTORY-MANAGEMENT-SYSTEM-FRONTEND/src/app/shared/ui/dev-app-inputbold tracking-wider uppercase text-slate-400"
               >Short Summary</label
             >
             <textarea
@@ -109,6 +110,8 @@ import { AuthService } from '../../core/auth-service/auth-service';
               (keydown.enter)="addTag($event, tagInput)"
               class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 transition-all"
             />
+
+            
 
             <div class="flex flex-wrap gap-1.5 pt-2">
               @for (tag of tags(); track tag) {
@@ -145,6 +148,27 @@ import { AuthService } from '../../core/auth-service/auth-service';
             </div>
           </div>
 
+
+          <div class="space-y-2">
+            <label class="text-xs font-bold tracking-wider uppercase text-slate-400"
+              >Article Status</label
+            >
+            <app-dev-app-select
+              formControlName="status"
+              label="Choose status"
+              placeholder="Select status"
+              [options]="statusOptions"
+              hintText="Choose whether this article should be saved as a draft or published now."
+            ></app-dev-app-select>
+
+            <p class="text-[11px] text-slate-500">
+              Selected status:
+              <span class="ml-1 font-semibold text-slate-200">
+                {{ postForm.get('status')?.value || 'Not selected' }}
+              </span>
+            </p>
+          </div>
+
           <div class="w-full h-px bg-slate-800/60 my-2"></div>
 
           <div class="flex flex-col gap-3 pt-2">
@@ -159,15 +183,6 @@ import { AuthService } from '../../core/auth-service/auth-service';
               <span>Publish Article</span>
             </app-dev-app-btn>
 
-            <app-dev-app-btn
-              type="button"
-              variant="secondary"
-              size="md"
-              (click)="saveDraft()"
-              class="w-full"
-            >
-              <span>Save Draft</span>
-            </app-dev-app-btn>
           </div>
         </div>
       </form>
@@ -190,13 +205,18 @@ export class UploadArticle implements OnInit {
   // Layout View Signal management flags
   readonly previewMode = signal<boolean>(false);
   readonly tags = signal<string[]>([]);
+  readonly statusOptions = [
+    { label: 'Draft', value: 'DRAFT' },
+    { label: 'Published', value: 'PUBLISHED' },
+  ];
 
   // Form Group Core Definition Architecture
   readonly postForm: FormGroup = this.formBuilder.group({
     title: ['', [Validators.required, Validators.minLength(5)]],
     content: ['', [Validators.required, Validators.minLength(20)]],
     description: ['', [Validators.required, Validators.maxLength(200)]],
-    authorId: ['', Validators.required]
+    authorId: ['', Validators.required],
+    status: ['DRAFT', Validators.required]
   });
 
   private getInitialUserId() {
@@ -218,29 +238,26 @@ export class UploadArticle implements OnInit {
     this.tags.update((currentTags) => currentTags.filter((t) => t !== tagToRemove));
   }
 
-  saveDraft(): void {
-    const draftPayload = {
-      ...this.postForm.value,
-      tags: this.tags(),
-      status: 'DRAFT',
-    };
-  }
-
-
   onSubmit(): void {
     if (this.postForm.invalid) return;
     this.isPostFormSubmitted.set(true)
 
-    const { title, content, authorId }: ModelInter.Article = this.postForm.value
+    const { title, content, authorId, status }: ModelInter.Article = this.postForm.value
 
-    this.articlesService.postArticle({ title, content, status: 'PUBLISHED', authorId, tags: this.tags() })
+    this.articlesService.postArticle({ title, content, status, authorId, tags: this.tags() })
       .subscribe({
-        next: (res) => {
+        next: () => {
           this.isPostFormSubmitted.set(false)
-          this.postForm.reset()
+          this.postForm.reset({
+            title: '',
+            content: '',
+            description: '',
+            authorId: this.authService.getUserData()?.id,
+            status
+          })
           this.tags.set([]) // Clear tags after successful submission
         },
-        error: (err) => {
+        error: () => {
           this.isPostFormSubmitted.set(false)
         }
       })

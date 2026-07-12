@@ -1,5 +1,6 @@
-import { Component, model, output } from '@angular/core';
+import { Component, inject, model, output } from '@angular/core';
 import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
+import { AuthService } from '../../core/auth-service/auth-service';
 
 @Component({
   selector: 'app-sign-out-model',
@@ -46,8 +47,9 @@ import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-2">
-          <app-dev-app-btn
+        <div class="flex items-center justify-between ">
+         <div>
+           <app-dev-app-btn
             type="button"
             variant="secondary"
             size="md"
@@ -56,7 +58,9 @@ import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
           >
             <span>Cancel</span>
           </app-dev-app-btn>
+         </div>
 
+        <div>
           <app-dev-app-btn
             type="button"
             variant="primary"
@@ -64,14 +68,16 @@ import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
             (click)="confirmSignout()"
             class="w-full"
           >
-            <span class="text-red-400 group-hover:text-red-300">Sign Out</span>
+            <span class="group-hover:text-red-300">Sign Out</span>
           </app-dev-app-btn>
+        </div>
         </div>
       </div>
     </div>
   }`,
 })
 export class SignOutModel {
+  private readonly AuthService = inject(AuthService);
   // Bi-directional modern state connection mapping
   readonly isOpen = model<boolean>(false);
 
@@ -85,6 +91,7 @@ export class SignOutModel {
   confirmSignout(): void {
     // 1. Notify listeners that logout sequence was requested
     this.onConfirmed.emit();
+    this.AuthService.signOut();
 
     // 2. Clear state views locally
     this.closeModal();

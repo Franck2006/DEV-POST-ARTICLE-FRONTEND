@@ -1,13 +1,24 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { AsideMobile } from '../aside-mobile/aside-mobile';
 import { AsideBar } from '../aside-bar/aside-bar';
 import { SignOutModel } from '../../components/sign-out-model/sign-out-model';
 import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
-import { RouterLink } from '@angular/router';
+import { RouterModule } from '@angular/router';
+import { AuthService } from '../../core/auth-service/auth-service';
+import { DevAppImgProfile } from "../../ui/dev-app-img-profile/dev-app-img-profile";
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-nav-bar',
-  imports: [AsideMobile, AsideBar, SignOutModel, DevAppBtn, RouterLink],
+  imports: [
+    AsideMobile,
+    AsideBar,
+    SignOutModel,
+    DevAppBtn,
+    RouterModule,
+    DevAppImgProfile,
+    CommonModule
+  ],
   template: `
     <div class="flex items-center justify-between w-full h-full">
       <!-- these are the mobile bars -->
@@ -105,16 +116,16 @@ import { RouterLink } from '@angular/router';
 
         <!-- User Dropdown Control Component -->
         <div class="relative">
-          <button
-            (click)="toggleDropdown()"
-            class="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 rounded-full"
+          <app-dev-app-img-profile
+            img_size="sm"
+            [user_name]="user?.name"
+            [user_lastname]="user?.lastname"
+            [user_image]="user?.avatarUrl"
+            [user_full_email]="user?.email"
+              (click)="toggleDropdown()"
+              class="cursor-pointer "
           >
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
-              alt="User avatar"
-              class="w-9 h-9 rounded-full object-cover border border-slate-700 hover:border-slate-500 transition-colors"
-            />
-          </button>
+          </app-dev-app-img-profile>
 
           <!-- Dropdown Menu Box -->
           @if (isDropdownOpen) {
@@ -123,7 +134,13 @@ import { RouterLink } from '@angular/router';
             >
               <div class="px-3 py-2 border-b border-slate-800/60 mb-1">
                 <p class="text-xs text-slate-500 font-medium">Signed in as</p>
-                <p class="text-sm font-semibold text-slate-200 truncate">developer_dev</p>
+                <p class="text-sm font-semibold text-slate-200 truncate">
+                  @if( user?.lastname && user?.name){
+                    {{ user?.lastname }} ({{ user?.name }})
+                  }@else{
+                    {{ user?.email }} 
+                  }
+                </p>
               </div>
 
               <button
@@ -145,6 +162,7 @@ import { RouterLink } from '@angular/router';
               <div class="h-px bg-slate-800/60 my-1"></div>
 
               <button
+                (click)="isSignOutModalOpen.set(true)"
                 class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-left text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
               >
                 Sign out
@@ -160,7 +178,7 @@ import { RouterLink } from '@angular/router';
       <app-aside-bar />
     </app-aside-mobile>
 
-    <app-sign-out-model />
+    <app-sign-out-model [(isOpen)]="isSignOutModalOpen" />
   `,
   styles: [
     `
@@ -171,6 +189,11 @@ import { RouterLink } from '@angular/router';
   ],
 })
 export class NavBar {
+  private readonly AuthService = inject(AuthService)
+
+  readonly user = this.AuthService.getUserData()
+
+  isSignOutModalOpen = signal(false);
   isDropdownOpen = false;
   isLeftBarOpen = signal(false);
 

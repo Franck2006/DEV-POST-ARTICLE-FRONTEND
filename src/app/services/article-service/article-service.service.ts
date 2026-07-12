@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpParams } from "@angular/common/http";
 import { environment } from "../../core/env/envirmennt";
 import { ModelInter } from "../../model/model.interface";
 
@@ -9,6 +9,18 @@ import { ModelInter } from "../../model/model.interface";
 
 export class ArticlesService {
     constructor(private readonly http: HttpClient) { }
+    // 
+    getArticles(limit: number, cursor: string | null) {
+        let params = new HttpParams()
+            .set('limit', limit.toString())
+        if (cursor) {
+            params = params.set('cursor', cursor)
+        }
+
+        console.log("this is the params", params.toString())
+
+        return this.http.get<ModelInter.Article[]>(environment.LOCAL_BACKEND_URL + "/article/get-all-articles", { params })
+    }
 
     postArticle(article: ModelInter.Article) {
         return this.http.post(environment.LOCAL_BACKEND_URL + "/article/create-article", article)
