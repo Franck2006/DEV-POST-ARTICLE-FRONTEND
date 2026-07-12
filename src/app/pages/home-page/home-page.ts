@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild, WritableSignal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild, WritableSignal, computed } from '@angular/core';
 import { Dashboard } from '../../shared/dashboard/dashboard';
 import { ArticleCard } from '../../components/article-card/article-card';
 import { MOCK_ARTICLES } from '../../core/data/data.data';
@@ -17,6 +17,8 @@ import { ArticlePreloader } from "../../ui/article-preloader/article-preloader";
         <div *ngFor="let item of articles()" > 
          <app-article-card [article]="item" /> 
         </div>
+
+
 
         <app-article-preloader *ngIf="isLoading()"/>
         <div #scrollAnchor class="h-16"></div>
@@ -38,6 +40,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   // this is the new code that i am going to add to the home page component to get the articles from the backend and display them in the home page component
   @ViewChild('scrollAnchor') scrollAnchor !: ElementRef<HTMLDivElement>;
 
+  articlesSubject = this.articlesService.article$
   articles = signal<any[]>([])
   isLoading = signal<boolean>(false)
   nextCursor = signal<string | null>(null)
@@ -52,12 +55,17 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     this.setupIntersectionObserver()
   }
 
+  public devArticles = computed(() => {
+    return this.articlesSubject.subscribe(article => article)
+  })
+
   private loadArticles() {
     this.isLoading.set(true)
 
     this.articlesService.getArticles(this.limit(), this.nextCursor()).subscribe({
       next: (response: any) => {
         this.articles.set([...this.articles(), ...response.articles])
+        // this.articlesService.articleSubject.next([...this.articles, ...response.articles])  
         this.nextCursor.set(response.nextCursor)
         this.isLoading.set(false)
 
