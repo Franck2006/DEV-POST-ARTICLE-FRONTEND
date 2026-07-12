@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { environment } from "../../core/env/envirmennt";
 import { ModelInter } from "../../model/model.interface";
+import { BehaviorSubject } from "rxjs";
 
 @Injectable({
     providedIn: 'root'
@@ -9,7 +10,14 @@ import { ModelInter } from "../../model/model.interface";
 
 export class ArticlesService {
     constructor(private readonly http: HttpClient) { }
-    // 
+
+    public articleSubject = new BehaviorSubject<ModelInter.Article[]>([])
+    public article$ = this.articleSubject.asObservable()
+
+    setarticleSubject(articles: ModelInter.Article[]) {
+        this.articleSubject.next(articles)
+    }
+
     getArticles(limit: number, cursor: string | null) {
         let params = new HttpParams()
             .set('limit', limit.toString())
