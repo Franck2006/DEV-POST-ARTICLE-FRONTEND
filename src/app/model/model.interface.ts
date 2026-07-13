@@ -6,7 +6,7 @@ export namespace ModelInter {
 
     interface DateTime {
         createdAt?: string
-        updatedAt?: string
+        updatedAt?: Date
     }
 
     interface Credentials {

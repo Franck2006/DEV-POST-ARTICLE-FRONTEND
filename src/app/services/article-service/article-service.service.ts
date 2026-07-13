@@ -18,16 +18,24 @@ export class ArticlesService {
         this.articleSubject.next(articles)
     }
 
-    getArticles(limit: number, cursor: string | null) {
+    getPublishedArticles(limit: number, cursor: string | null) {
         let params = new HttpParams()
             .set('limit', limit.toString())
         if (cursor) {
             params = params.set('cursor', cursor)
         }
+        return this.http.get<ModelInter.Article[]>(environment.LOCAL_BACKEND_URL + "/article/get-published-articles", { params })
+    }
 
-        console.log("this is the params", params.toString())
+    getDraftArticles(limit: number, cursor: string | null, userId: string) {
+        let params = new HttpParams()
+            .set('limit', limit.toString())
+            .set('userId', userId.toString())
 
-        return this.http.get<ModelInter.Article[]>(environment.LOCAL_BACKEND_URL + "/article/get-all-articles", { params })
+        if (cursor) {
+            params = params.set('cursor', cursor)
+        }
+        return this.http.get<ModelInter.Article[]>(environment.LOCAL_BACKEND_URL + "/article/get-draft-articles", { params })
     }
 
     postArticle(article: ModelInter.Article) {

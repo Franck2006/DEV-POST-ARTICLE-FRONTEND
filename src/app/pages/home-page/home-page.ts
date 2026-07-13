@@ -18,8 +18,6 @@ import { ArticlePreloader } from "../../ui/article-preloader/article-preloader";
          <app-article-card [article]="item" /> 
         </div>
 
-
-
         <app-article-preloader *ngIf="isLoading()"/>
         <div #scrollAnchor class="h-16"></div>
       </div>
@@ -33,8 +31,10 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
 
   public newdata = this.articlesRealtime.articles as WritableSignal<ModelInter.Article[]>;
   data = MOCK_ARTICLES;
+
   constructor() {
     console.log("this is the data from the home page", this.newdata())
+    console.log("this is the data from the home page", this.devArticles())
   }
 
   // this is the new code that i am going to add to the home page component to get the articles from the backend and display them in the home page component
@@ -56,20 +56,22 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public devArticles = computed(() => {
-    return this.articlesSubject.subscribe(article => article)
+    let articles: any = []
+    this.articlesSubject.subscribe(article => articles.push(article))
+    return articles
   })
 
   private loadArticles() {
     this.isLoading.set(true)
 
-    this.articlesService.getArticles(this.limit(), this.nextCursor()).subscribe({
+    this.articlesService.getPublishedArticles(this.limit(), this.nextCursor()).subscribe({
       next: (response: any) => {
         this.articles.set([...this.articles(), ...response.articles])
-        // this.articlesService.articleSubject.next([...this.articles, ...response.articles])  
+        this.articlesService.articleSubject.next([...this.devArticles(), ...response.articles])
         this.nextCursor.set(response.nextCursor)
         this.isLoading.set(false)
 
-        console.log("this is the articles from the backend", response)
+        console.log("this is the articles from the backend", this.devArticles())
 
       },
       error: (error) => {

@@ -1,20 +1,17 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { DevAppBtn } from '../../ui/dev-app-btn/dev-app-btn';
+import { DevAppConfirmDialog } from '../../ui/dev-app-confirm-dialog/dev-app-confirm-dialog';
+import { DevAppToast, type ToastModel } from '../../ui/dev-app-toast/dev-app-toast';
 import { Dashboard } from '../../shared/dashboard/dashboard';
 import { RouterLink } from '@angular/router';
-import { DatePipe } from '@angular/common';
-
-export interface DraftItem {
-  id: string;
-  title: string;
-  description: string;
-  tags: string[];
-  updatedAt: string | Date;
-}
+import { CommonModule, DatePipe, JsonPipe } from '@angular/common';
+import { ArticlesService } from '../../services/article-service/article-service.service';
+import { AuthService } from '../../core/auth-service/auth-service';
+import { ModelInter } from '../../model/model.interface';
 
 @Component({
   selector: 'app-my-dafts',
-  imports: [DevAppBtn, Dashboard, RouterLink, DatePipe],
+  imports: [DevAppBtn, DevAppConfirmDialog, DevAppToast, Dashboard, RouterLink, DatePipe, CommonModule],
   template: `
     <app-dashboard>
       <div class="space-y-8 text-slate-200">
@@ -31,13 +28,18 @@ export interface DraftItem {
           <span
             class="self-start sm:self-center text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"
           >
-            {{ draftsList().length }} Work in Progress
+            {{ articles().length }} Work in Progress
           </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          @for (draft of draftsList(); track draft.id) {
+         
+
+          @for (draft of articles(); track draft.id) {
+
+            
             <div
+            *ngIf="draft"
               class="group relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/40 p-5 hover:bg-slate-900/80 hover:border-slate-700/60 transition-all duration-300 shadow-sm"
             >
               <div class="space-y-3">
@@ -46,7 +48,7 @@ export interface DraftItem {
                   <span
                     class="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 uppercase text-[10px] tracking-wider text-slate-400"
                   >
-                    {{ draft.tags[0] || 'Uncategorized' }}
+                    {{ draft.tags?.[0] || 'Uncategorized' }}
                   </span>
                 </div>
 
@@ -58,15 +60,15 @@ export interface DraftItem {
                   </h3>
                   <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
                     {{
-                      draft.description ||
+                      draft?.content ||
                         'No summary configured yet. Click edit to begin formatting your article data parameters...'
                     }}
                   </p>
                 </div>
 
-                @if (draft.tags.length > 0) {
+                @if ((draft.tags?.length ?? 0) > 0) {
                   <div class="flex flex-wrap gap-1 pt-1">
-                    @for (tag of draft.tags; track tag) {
+                    @for (tag of draft.tags ?? []; track tag) {
                       <span
                         class="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-950 border border-slate-900 text-slate-500"
                       >
@@ -82,8 +84,8 @@ export interface DraftItem {
               >
                 <button
                   type="button"
-                  (click)="onDeleteDraft(draft.id)"
-                  class="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all"
+                  (click)="openDeleteConfirmation(draft?.id)"
+                  class="p-2 rounded-xl text-slate-500 cursor-pointer hover:text-red-400 hover:bg-red-500/5 transition-all"
                   title="Discard draft"
                 >
                   <svg
@@ -127,7 +129,7 @@ export interface DraftItem {
             >
               <p>No offline draft sessions active right now.</p>
               <div class="flex justify-center">
-                <app-dev-app-btn variant="primary" size="sm" routerLink="/create-post">
+                <app-dev-app-btn variant="primary" size="sm" routerLink="/upload-article">
                   <span>Start Writing</span>
                 </app-dev-app-btn>
               </div>
@@ -136,39 +138,125 @@ export interface DraftItem {
         </div>
       </div>
     </app-dashboard>
+
+    <app-dev-app-confirm-dialog
+      [isOpen]="isDeleteDialogOpen()"
+      title="Delete draft?"
+      message="This draft will be removed from your saved drafts. This action cannot be undone."
+      variant="danger"
+      confirmLabel="Delete"
+      cancelLabel="Keep"
+      (confirm)="confirmDeleteDraft()"
+      (cancel)="closeDeleteDialog()"
+    />
+
+    @if (deleteToast()) {
+      <div class="fixed bottom-4 right-4 z-60">
+        <app-dev-app-toast
+          [id]="deleteToast()!.id"
+          [type]="deleteToast()!.type"
+          [title]="deleteToast()!.title ?? null"
+          [message]="deleteToast()!.message"
+          [duration]="3500"
+          (close)="dismissDeleteToast($event)"
+        />
+      </div>
+    }
   `,
 })
-export class MyDafts {
-  // Local reactive array stream handling active mock drafts data states
-  readonly draftsList = signal<DraftItem[]>([
-    {
-      id: 'drf-001',
-      title: 'Optimizing Supabase Image Storage Streams for Mobile Apps',
-      description:
-        'An unreleased deep dive into handling high-throughput base64 mutations directly using Supabase object buckets inside background tasks.',
-      tags: ['supabase', 'backend'],
-      updatedAt: new Date('2026-06-07T14:22:00Z'),
-    },
-    {
-      id: 'drf-002',
-      title: '', // Testing template empty fallback text layout states
-      description: '',
-      tags: [],
-      updatedAt: new Date('2026-05-28T09:12:15Z'),
-    },
-    {
-      id: 'drf-003',
-      title: 'Building a Custom SerialPort Automation Dashboard with NestJS',
-      description:
-        'Drafting out the hardware configuration interface parameters required to pass commands to local USB microcontrollers straight from a standard web interface node loop.',
-      tags: ['nestjs', 'hardware'],
-      updatedAt: new Date('2026-06-03T18:45:00Z'),
-    },
-  ]);
+export class MyDafts implements OnInit {
 
-  onDeleteDraft(id: string): void {
-    // Optimistically update local array list state parameters
-    this.draftsList.update((currentDrafts) => currentDrafts.filter((d) => d.id !== id));
-    console.log('Draft target node wiped from internal state storage context for id:', id);
+  ngOnInit(): void {
+    this.getDraftArticles()
+  }
+
+  articles = signal<ModelInter.Article[]>([])
+  isDeleteDialogOpen = signal<boolean>(false)
+  selectedDraftId = signal<string | null>(null)
+  deleteToast = signal<ToastModel | null>(null)
+
+  limit = signal<number>(4)
+  nextCursor = signal<string | null>(null)
+  isLoading = signal<boolean>(false)
+
+  private readonly articleServices = inject(ArticlesService);
+  private readonly authService = inject(AuthService);
+
+  getDraftArticles() {
+    const userId = this.authService.getUserData()?.id || "";
+    this.isLoading.set(true)
+
+    console.log("this is the user id from the auth service", userId)
+    this.articleServices.getDraftArticles(this.limit(), this.nextCursor(), userId).subscribe({
+      next: (response: ModelInter.Article[]) => {
+        this.articles.set([...this.articles(), ...response])
+
+      },
+      error: (error) => { }
+    })
+  }
+
+
+  openDeleteConfirmation(id: string | undefined): void {
+    if (!id) {
+      return;
+    }
+
+    this.selectedDraftId.set(id);
+    this.isDeleteDialogOpen.set(true);
+  }
+
+  confirmDeleteDraft(): void {
+    const id = this.selectedDraftId();
+
+    if (!id) {
+      this.closeDeleteDialog();
+      return;
+    }
+
+    this.onDeleteDraft(id);
+    this.closeDeleteDialog();
+  }
+
+  closeDeleteDialog(): void {
+    this.isDeleteDialogOpen.set(false);
+    this.selectedDraftId.set(null);
+  }
+
+  onDeleteDraft(id: string | undefined): void {
+    if (!id) {
+      return;
+    }
+
+    this.articleServices.deleteArticle(id).subscribe({
+      next: () => {
+        this.articles.set(this.articles().filter((draft) => draft.id !== id));
+        this.showDeleteToast({
+          id: `delete-draft-${Date.now()}`,
+          type: 'success',
+          title: 'Draft removed',
+          message: 'The draft was deleted successfully.'
+        });
+      },
+      error: (error) => {
+        console.error('Error deleting draft:', error);
+        this.showDeleteToast({
+          id: `delete-draft-error-${Date.now()}`,
+          type: 'error',
+          title: 'Delete failed',
+          message: 'We could not delete the draft. Please try again.'
+        });
+      }
+    });
+  }
+
+  dismissDeleteToast(id: string): void {
+    if (this.deleteToast()?.id === id) {
+      this.deleteToast.set(null);
+    }
+  }
+
+  private showDeleteToast(toast: ToastModel): void {
+    this.deleteToast.set(toast);
   }
 }

@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { CommonModule } from '@angular/common';
 import { RealTimeArticlesService } from '../../realtime/artciles/retrieve-realtime-articles.service';
 import { DevAppBtn } from "../../ui/dev-app-btn/dev-app-btn";
+import { DevAppToast, type ToastModel } from '../../ui/dev-app-toast/dev-app-toast';
 import { ArticlesService } from '../../services/article-service/article-service.service';
 import { ModelInter } from '../../model/model.interface';
 import { AuthService } from '../../core/auth-service/auth-service';
@@ -11,7 +12,7 @@ import { DevAppSelect } from '../../ui/dev-app-select/dev-app-select';
 
 @Component({
   selector: 'app-upload-article',
-  imports: [Dashboard, ReactiveFormsModule, CommonModule, DevAppBtn, DevAppSelect],
+  imports: [Dashboard, ReactiveFormsModule, CommonModule, DevAppBtn, DevAppSelect, DevAppToast],
   template: `
     <app-dashboard>
       <form
@@ -63,7 +64,7 @@ import { DevAppSelect } from '../../ui/dev-app-select/dev-app-select';
               <textarea
                 formControlName="content"
                 placeholder="Write your article core content here using Markdown syntax..."
-                class="w-full min-h-[450px] bg-slate-950/40 border border-slate-800 rounded-2xl p-5 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/10 resize-y font-mono text-sm leading-relaxed transition-all"
+                class="w-full min-h-112 bg-slate-950/40 border border-slate-800 rounded-2xl p-5 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/10 resize-y font-mono text-sm leading-relaxed transition-all"
               ></textarea>
               @if (postForm.get('content')?.touched && postForm.get('content')?.invalid) {
                 <p class="text-xs text-red-400 mt-1">Don't leave the canvas blank!</p>
@@ -71,7 +72,7 @@ import { DevAppSelect } from '../../ui/dev-app-select/dev-app-select';
             </div>
           } @else {
             <div
-              class="w-full min-h-[450px] bg-slate-900/20 border border-slate-800 border-dashed rounded-2xl p-6 overflow-y-auto max-w-none"
+              class="w-full min-h-112 bg-slate-900/20 border border-slate-800 border-dashed rounded-2xl p-6 overflow-y-auto max-w-none"
             >
               @if (postForm.get('content')?.value) {
                 <h1 class="text-xl font-bold text-slate-100 mb-4">
@@ -187,6 +188,19 @@ import { DevAppSelect } from '../../ui/dev-app-select/dev-app-select';
         </div>
       </form>
     </app-dashboard>
+
+    @if (createPostToast()) {
+      <div class="fixed bottom-4 right-4 z-60">
+        <app-dev-app-toast
+          [id]="createPostToast()!.id"
+          [type]="createPostToast()!.type"
+          [title]="createPostToast()!.title ?? null"
+          [message]="createPostToast()!.message"
+          [duration]="3500"
+          (close)="dismissCreatePostToast($event)"
+        />
+      </div>
+    }
   `,
 })
 export class UploadArticle implements OnInit {
@@ -201,6 +215,7 @@ export class UploadArticle implements OnInit {
 
   isPostFormSubmitted = signal<boolean>(false)
   isPostDraftSubmitted = signal<boolean>(false)
+  createPostToast = signal<ToastModel | null>(null)
 
   // Layout View Signal management flags
   readonly previewMode = signal<boolean>(false);
@@ -243,6 +258,7 @@ export class UploadArticle implements OnInit {
     this.isPostFormSubmitted.set(true)
 
     const { title, content, authorId, status }: ModelInter.Article = this.postForm.value
+    const isPublished = status === 'PUBLISHED';
 
     this.articlesService.postArticle({ title, content, status, authorId, tags: this.tags() })
       .subscribe({
@@ -255,13 +271,33 @@ export class UploadArticle implements OnInit {
             authorId: this.authService.getUserData()?.id,
             status
           })
-          this.tags.set([]) // Clear tags after successful submission
+          this.tags.set([])
+          this.showCreatePostToast({
+            id: `create-post-${Date.now()}`,
+            type: 'success',
+            title: 'Post created',
+            message: isPublished ? 'Your article is now live.' : 'Your article was saved as a draft.'
+          })
         },
         error: () => {
           this.isPostFormSubmitted.set(false)
+          this.showCreatePostToast({
+            id: `create-post-error-${Date.now()}`,
+            type: 'error',
+            title: 'Post failed',
+            message: 'We could not create your post. Please try again.'
+          })
         }
       })
+  }
 
+  dismissCreatePostToast(id: string): void {
+    if (this.createPostToast()?.id === id) {
+      this.createPostToast.set(null);
+    }
+  }
 
+  private showCreatePostToast(toast: ToastModel): void {
+    this.createPostToast.set(toast);
   }
 }
